@@ -24,8 +24,8 @@ export function ParticleText({ text }: { text: string }) {
       off.width = w; off.height = h;
       const o = off.getContext("2d")!;
       const lines = w < 700 ? text.split(" ").length > 1 ? ["UI/UX", "DESIGNER"] : [text] : [text];
-      let size = Math.min(w / (lines[0].length > 6 ? 6.2 : 4.2), h / (lines.length * 1.1));
-      if (lines.length === 1) size = Math.min(w / 7, h * 0.7);
+      let size = Math.min(w / (lines[0]!.length > 6 ? 6.2 : 4.2), h / (lines.length * 1.1));
+      if (lines.length === 1) size = Math.min(w / 8.6, h * 0.7);
       o.font = `800 ${size}px "Bricolage Grotesque", sans-serif`;
       o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#000";
       lines.forEach((l, i) => o.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size * 1.0));
