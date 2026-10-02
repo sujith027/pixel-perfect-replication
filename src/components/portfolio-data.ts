@@ -1,5 +1,4 @@
 export const EMAIL = "sujithspoojary274@gmail.com";
-export const PHONE = "+91 8088 0750 83";
 export const LINKEDIN = "https://www.linkedin.com/";
 export const BEHANCE = "https://www.behance.net/";
 

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ParticleText } from "@/components/ParticleText";
 import { RunnerGame } from "@/components/RunnerGame";
-import { BEHANCE, EMAIL, LINKEDIN, PHONE, projects, skills, tools } from "@/components/portfolio-data";
+import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -102,7 +102,6 @@ function About() {
           <a href="/resume.pdf" download className="mt-6 flex items-center justify-center gap-2 rounded-full bg-foreground py-3.5 font-semibold text-background transition-transform hover:scale-[1.03]">Download Resume ↓</a>
           <ul className="mt-6 space-y-2 text-sm font-semibold">
             <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={`mailto:${EMAIL}`}>Email <span className="text-muted-foreground">↗</span></a></li>
-            <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={`tel:${PHONE.replace(/\s/g, "")}`}>{PHONE} <span className="text-muted-foreground">↗</span></a></li>
             <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn <span className="text-muted-foreground">↗</span></a></li>
           </ul>
         </div>
@@ -140,7 +139,7 @@ function ProjectCard({ p, i, onOpen }: { p: (typeof projects)[number]; i: number
         className="group w-full rounded-3xl border bg-card p-3 text-left shadow-soft transition-[transform,box-shadow] duration-300 ease-out hover:shadow-lift">
         <div className={`relative grid h-64 place-items-center overflow-hidden rounded-2xl ${p.grad}`}>
           <div className="transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2"><Device kind={p.device} /></div>
-          <span className="absolute right-4 top-4 translate-x-[140%] rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0">View Case Study ↗</span>
+          <span className="absolute right-4 top-4 translate-x-[140%] rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0">View Project ↗</span>
         </div>
         <div className="p-4">
           <h3 className="text-2xl font-bold">{p.title} <span className="font-sans text-base font-medium text-muted-foreground">— {p.sub}</span></h3>
@@ -227,7 +226,6 @@ function Contact() {
           <button onClick={() => { navigator.clipboard.writeText(EMAIL); setCopied(true); setTimeout(() => setCopied(false), 1600); }}
             className="shrink-0 rounded-2xl border bg-card px-5 font-semibold transition-colors hover:bg-accent">{copied ? "Copied!" : "Copy"}</button>
         </div>
-        <Magnetic href={`tel:${PHONE.replace(/\s/g, "")}`} label="Phone" value={PHONE} />
         <Magnetic href={LINKEDIN} label="LinkedIn" value="Connect" />
         <Magnetic href={BEHANCE} label="Behance" value="See shots" />
         <Magnetic href="#work" label="Portfolio" value="Case studies" />
