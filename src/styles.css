@@ -28,6 +28,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-sky: var(--sky);
+  --color-ink: var(--ink);
+  --color-ribbon: var(--ribbon);
   --color-lime: var(--lime);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -53,6 +55,9 @@
   --accent: oklch(0.88 0.17 125);
   --accent-foreground: oklch(0.2 0.02 270);
   --sky: oklch(0.72 0.13 235);
+  --ink: #1a1a1a;
+  --lime-deep: oklch(0.78 0.19 128);
+  --ribbon: #c8f04b;
   --lime: oklch(0.88 0.17 125);
   --destructive: oklch(0.6 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);

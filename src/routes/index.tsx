@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ParticleText } from "@/components/ParticleText";
+import { WaveLoop } from "@/components/WaveLoop";
 import { RunnerGame } from "@/components/RunnerGame";
 import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
 
@@ -32,6 +33,7 @@ function Index() {
       <Hero />
       <About />
       <Projects />
+      <WaveLoop />
       <Contact />
       <Footer />
     </main>
@@ -42,7 +44,7 @@ function Nav() {
   return (
     <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
       <nav className="flex items-center gap-1 rounded-full border bg-card/80 p-1.5 shadow-soft backdrop-blur">
-        <a href="#top" className="rounded-full bg-foreground px-4 py-2 font-display text-sm font-bold text-background">SSP</a>
+        <a href="#top" aria-label="Back to top" className="block shrink-0 rounded-full transition-transform duration-500 ease-[cubic-bezier(.34,1.8,.5,1)] hover:scale-110"><img src="https://i.pravatar.cc/112?img=12" alt="Sujith S Poojary" width={56} height={56} className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/40 ring-offset-2 ring-offset-card shadow-soft" /></a>
         {["about", "work", "contact"].map((s) => (
           <a key={s} href={`#${s}`} className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors hover:bg-muted">{s}</a>
         ))}
@@ -56,7 +58,7 @@ function Hero() {
     <section id="top" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20">
       <p className="reveal mb-2 rounded-full border bg-card px-4 py-1.5 text-sm font-semibold shadow-soft">👋 Hi, I'm Sujith S Poojary</p>
       <div className="h-[46vh] w-full max-w-7xl">
-        <ParticleText text="UI/UX DESIGNER" />
+        <ParticleText text="UI/UX DESIGNER" src="/logo.svg" />
       </div>
       <p className="reveal max-w-md text-center text-muted-foreground">Hover the letters. Designing calm, curious interfaces from Mangalore, India.</p>
       <a href="#about" aria-label="Scroll to about" className="absolute bottom-8 grid h-12 w-12 place-items-center rounded-full border bg-card shadow-soft animate-bob">↓</a>
