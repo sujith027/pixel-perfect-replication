@@ -34,8 +34,8 @@ export function ParticleText({ text }: { text: string }) {
       parts = [];
       for (let y = 0; y < h; y += gap)
         for (let x = 0; x < w; x += gap)
-          if (data[(y * w + x) * 4 + 3] > 128)
-            parts.push({ x: Math.random() * w, y: Math.random() * h, ox: x, oy: y, vx: 0, vy: 0, c: palette[(Math.random() * palette.length) | 0] });
+          if ((data[(y * w + x) * 4 + 3] ?? 0) > 128)
+            parts.push({ x: Math.random() * w, y: Math.random() * h, ox: x, oy: y, vx: 0, vy: 0, c: palette[(Math.random() * palette.length) | 0] ?? "#222" });
     };
 
     const tick = () => {

@@ -28,7 +28,7 @@ export function RunnerGame() {
       const dt = Math.min((now - last) / 16.67, 3); last = now;
       t += dt; speed += 0.002 * dt; s += 0.15 * dt;
       vy -= 0.6 * dt; y = Math.max(0, y + vy * dt); if (y === 0) vy = Math.max(vy, 0);
-      if (obs.length === 0 || obs[obs.length - 1].x < w - (220 + Math.random() * 260))
+      if (obs.length === 0 || obs[obs.length - 1]!.x < w - (220 + Math.random() * 260))
         if (Math.random() < 0.03) obs.push({ x: w + 20, w: 16 + Math.random() * 14, h: 20 + Math.random() * 22 });
       obs.forEach(o => (o.x -= speed * dt)); obs = obs.filter(o => o.x > -50);
 
@@ -55,7 +55,7 @@ export function RunnerGame() {
       e.preventDefault(); dead ? reset() : jump();
     };
     size(); addEventListener("resize", size); addEventListener("keydown", key);
-    const io = new IntersectionObserver(([en]) => { if (en.isIntersecting && t === 0) reset(); });
+    const io = new IntersectionObserver(([en]) => { if (en?.isIntersecting && t === 0) reset(); });
     io.observe(c);
     return () => { cancelAnimationFrame(raf); removeEventListener("resize", size); removeEventListener("keydown", key); io.disconnect(); };
   }, []);
