@@ -94,7 +94,7 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       canvas.removeEventListener("touchmove", onTouch);
       canvas.removeEventListener("touchend", leave);
     };
-  }, [text]);
+  }, [text, src]);
 
   return <canvas ref={ref} role="img" aria-label={text} className="h-full w-full" />;
 }
