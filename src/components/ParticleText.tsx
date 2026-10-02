@@ -2,33 +2,41 @@ import { useEffect, useRef } from "react";
 
 type P = { x: number; y: number; ox: number; oy: number; vx: number; vy: number; c: string };
 
-export function ParticleText({ text }: { text: string }) {
+export function ParticleText({ text, src }: { text: string; src?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current!;
     const ctx = canvas.getContext("2d")!;
     const css = getComputedStyle(document.documentElement);
-    const palette = [css.getPropertyValue("--foreground"), css.getPropertyValue("--foreground"), css.getPropertyValue("--primary"), css.getPropertyValue("--sky")];
+    const ink = css.getPropertyValue("--ink") || "#1A1A1A";
+    const palette = [ink, ink, ink, css.getPropertyValue("--primary"), css.getPropertyValue("--sky"), css.getPropertyValue("--lime-deep")];
     let parts: P[] = [];
     let raf = 0;
     const mouse = { x: -9999, y: -9999 };
     let w = 0, h = 0, dpr = 1;
+    let img: HTMLImageElement | null = null;
 
     const build = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = canvas.clientWidth; h = canvas.clientHeight;
+      if (!w || !h) return;
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const off = document.createElement("canvas");
       off.width = w; off.height = h;
       const o = off.getContext("2d")!;
-      const lines = w < 700 ? text.split(" ").length > 1 ? ["UI/UX", "DESIGNER"] : [text] : [text];
-      let size = Math.min(w / (lines[0]!.length > 6 ? 6.2 : 4.2), h / (lines.length * 1.1));
-      if (lines.length === 1) size = Math.min(w / 8.6, h * 0.7);
-      o.font = `800 ${size}px "Bricolage Grotesque", sans-serif`;
-      o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#000";
-      lines.forEach((l, i) => o.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size * 1.0));
+      if (img) {
+        const iw = img.naturalWidth || 1174, ih = img.naturalHeight || 201;
+        const s = Math.min((w * 0.9) / iw, (h * 0.8) / ih);
+        o.drawImage(img, (w - iw * s) / 2, (h - ih * s) / 2, iw * s, ih * s);
+      } else {
+        const lines = w < 700 && text.includes(" ") ? text.split(" ") : [text];
+        const size = lines.length > 1 ? Math.min(w / 6.2, h / (lines.length * 1.1)) : Math.min(w / 8.6, h * 0.7);
+        o.font = `800 ${size}px "Bricolage Grotesque", sans-serif`;
+        o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#000";
+        lines.forEach((l, i) => o.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size));
+      }
       const data = o.getImageData(0, 0, w, h).data;
       const gap = w < 700 ? 4 : 5;
       parts = [];
@@ -66,7 +74,13 @@ export function ParticleText({ text }: { text: string }) {
     const onTouch = (e: TouchEvent) => e.touches[0] && move(e.touches[0].clientX, e.touches[0].clientY);
     const leave = () => { mouse.x = mouse.y = -9999; };
 
-    document.fonts.ready.then(() => { build(); tick(); });
+    const start = () => { build(); tick(); };
+    if (src) {
+      const i = new Image();
+      i.onload = () => { img = i; start(); };
+      i.onerror = () => document.fonts.ready.then(start);
+      i.src = src;
+    } else document.fonts.ready.then(start);
     const ro = new ResizeObserver(() => build());
     ro.observe(canvas);
     canvas.addEventListener("mousemove", onMouse);
