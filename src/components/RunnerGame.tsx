@@ -10,11 +10,6 @@ export function RunnerGame() {
   useEffect(() => {
     const c = ref.current!;
     const ctx = c.getContext("2d")!;
-    const css = getComputedStyle(document.documentElement);
-    const ink = css.getPropertyValue("--foreground");
-    const coral = css.getPropertyValue("--primary");
-    const sky = css.getPropertyValue("--sky");
-    const line = css.getPropertyValue("--border");
     let w = 0; const h = 160; const ground = 130;
     let y = 0, vy = 0, obs: { x: number; w: number; h: number }[] = [];
     let speed = 5, t = 0, s = 0, dead = false, raf = 0, last = 0;
@@ -25,6 +20,11 @@ export function RunnerGame() {
     restartRef.current = reset; jumpRef.current = jump;
 
     function loop(now: number) {
+      const css = getComputedStyle(document.documentElement);
+      const ink = css.getPropertyValue("--foreground");
+      const coral = css.getPropertyValue("--primary");
+      const sky = css.getPropertyValue("--sky");
+      const line = css.getPropertyValue("--border");
       const dt = Math.min((now - last) / 16.67, 3); last = now;
       t += dt; speed += 0.002 * dt; s += 0.15 * dt;
       vy -= 0.6 * dt; y = Math.max(0, y + vy * dt); if (y === 0) vy = Math.max(vy, 0);
