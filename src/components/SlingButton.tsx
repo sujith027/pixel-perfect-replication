@@ -92,7 +92,8 @@ export function SlingButton({ onSend, padColor, iconColor, accentColor, wellColo
   return (
     <div className="sling" style={padStyle}>
       <span className="sling-arm" aria-hidden />
-      <Button type="button" variant="ghost" size="icon" aria-label={ariaLabel} title={ariaLabel} className="sling-pad"
+      <Button type="button" variant="ghost" size="icon" aria-label={ariaLabel} title={ariaLabel}
+        style={{ width: size, height: size }} className="sling-pad"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
         onPointerCancel={() => { origin.current = null; setPull({ x: 0, y: 0 }); }} onKeyDown={onKeyDown}>
         <ArrowUp strokeWidth={strokeWidth} />
