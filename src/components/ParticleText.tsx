@@ -1,16 +1,14 @@
 import { useEffect, useRef } from "react";
 
-type P = { x: number; y: number; ox: number; oy: number; vx: number; vy: number; c: string };
+type P = { x: number; y: number; ox: number; oy: number; vx: number; vy: number; size: number };
 
 export function ParticleText({ text, src }: { text: string; src?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = ref.current!;
-    const ctx = canvas.getContext("2d")!;
-    const css = getComputedStyle(document.documentElement);
-    const ink = css.getPropertyValue("--ink") || "#1A1A1A";
-    const palette = [ink, ink, ink, css.getPropertyValue("--primary"), css.getPropertyValue("--sky"), css.getPropertyValue("--lime-deep")];
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
     let parts: P[] = [];
     let raf = 0;
     const mouse = { x: -9999, y: -9999 };
@@ -25,7 +23,8 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const off = document.createElement("canvas");
       off.width = w; off.height = h;
-      const o = off.getContext("2d")!;
+      const o = off.getContext("2d");
+      if (!o) return;
       if (img) {
         const iw = img.naturalWidth || 1174, ih = img.naturalHeight || 201;
         const s = Math.min((w * 0.9) / iw, (h * 0.8) / ih);
@@ -34,21 +33,33 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
         const lines = w < 700 && text.includes(" ") ? text.split(" ") : [text];
         const size = lines.length > 1 ? Math.min(w / 6.2, h / (lines.length * 1.1)) : Math.min(w / 8.6, h * 0.7);
         o.font = `800 ${size}px "Bricolage Grotesque", sans-serif`;
-        o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#000";
+        o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "currentColor";
         lines.forEach((l, i) => o.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size));
       }
       const data = o.getImageData(0, 0, w, h).data;
-      const gap = w < 700 ? 4 : 5;
+      const gap = w < 700 ? 3 : 4;
       parts = [];
       for (let y = 0; y < h; y += gap)
         for (let x = 0; x < w; x += gap)
-          if ((data[(y * w + x) * 4 + 3] ?? 0) > 128)
-            parts.push({ x: Math.random() * w, y: Math.random() * h, ox: x, oy: y, vx: 0, vy: 0, c: palette[(Math.random() * palette.length) | 0] ?? "#222" });
+          if ((data[(y * w + x) * 4 + 3] ?? 0) > 128) {
+            const left = data[(y * w + Math.max(0, x - gap)) * 4 + 3] ?? 0;
+            const right = data[(y * w + Math.min(w - 1, x + gap)) * 4 + 3] ?? 0;
+            const top = data[(Math.max(0, y - gap) * w + x) * 4 + 3] ?? 0;
+            const bottom = data[(Math.min(h - 1, y + gap) * w + x) * 4 + 3] ?? 0;
+            const edge = left < 128 || right < 128 || top < 128 || bottom < 128;
+            if (!edge && ((x / gap + y / gap) % 2 !== 0)) continue;
+            const layer = Math.abs((x * 7 + y * 11) % 3);
+            parts.push({ x: Math.random() * w, y: Math.random() * h, ox: x, oy: y, vx: 0, vy: 0, size: [3.8, 4.6, 5.4][layer] ?? 4.6 });
+          }
     };
 
     const tick = () => {
       ctx.clearRect(0, 0, w, h);
-      const R = w < 700 ? 60 : 90;
+      const css = getComputedStyle(document.documentElement);
+      ctx.fillStyle = css.getPropertyValue("--particle").trim();
+      ctx.shadowColor = css.getPropertyValue("--particle-shadow").trim();
+      ctx.shadowBlur = 3;
+      const R = w < 700 ? 52 : 72;
       for (const p of parts) {
         const dx = p.x - mouse.x, dy = p.y - mouse.y;
         const d2 = dx * dx + dy * dy;
@@ -60,8 +71,9 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
         p.vx += (p.ox - p.x) * 0.06; p.vy += (p.oy - p.y) * 0.06;
         p.vx *= 0.82; p.vy *= 0.82;
         p.x += p.vx; p.y += p.vy;
-        ctx.fillStyle = p.c;
-        ctx.fillRect(p.x, p.y, 2.4, 2.4);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
       }
       raf = requestAnimationFrame(tick);
     };
@@ -83,12 +95,14 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
     } else document.fonts.ready.then(start);
     const ro = new ResizeObserver(() => build());
     ro.observe(canvas);
+    const themeObserver = new MutationObserver(() => build());
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     canvas.addEventListener("mousemove", onMouse);
     canvas.addEventListener("mouseleave", leave);
     canvas.addEventListener("touchmove", onTouch, { passive: true });
     canvas.addEventListener("touchend", leave);
     return () => {
-      cancelAnimationFrame(raf); ro.disconnect();
+      cancelAnimationFrame(raf); ro.disconnect(); themeObserver.disconnect();
       canvas.removeEventListener("mousemove", onMouse);
       canvas.removeEventListener("mouseleave", leave);
       canvas.removeEventListener("touchmove", onTouch);

@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Theme-dependent canvas visuals read semantic CSS variables at draw time so saved light/dark changes update without remounting; this keeps all custom rendering aligned with the site theme.
