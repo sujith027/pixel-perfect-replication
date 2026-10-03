@@ -259,7 +259,13 @@ export function SlingButton({
     y.set(distance * unitY);
     const time = performance.now();
     activeGrip.history.push({ x: distance * unitX, y: distance * unitY, time });
-    while (activeGrip.history.length > 4 || time - activeGrip.history[0].time > 80) activeGrip.history.shift();
+    while (activeGrip.history.length > 4) activeGrip.history.shift();
+    const oldestSample = activeGrip.history[0];
+    while (oldestSample && time - oldestSample.time > 80) {
+      activeGrip.history.shift();
+      const nextSample = activeGrip.history[0];
+      if (!nextSample || time - nextSample.time <= 80) break;
+    }
     const isArmed = distance >= armDistance;
     if (isArmed !== armedRef.current) {
       armedRef.current = isArmed;
@@ -281,10 +287,12 @@ export function SlingButton({
     if (!cancelled && activeGrip.history.length > 1) {
       const first = activeGrip.history[0];
       const last = activeGrip.history[activeGrip.history.length - 1];
-      const elapsed = last.time - first.time;
-      if (elapsed > 0 && performance.now() - last.time < 50) {
-        velocityX = ((last.x - first.x) / elapsed) * 1000;
-        velocityY = ((last.y - first.y) / elapsed) * 1000;
+      if (first && last) {
+        const elapsed = last.time - first.time;
+        if (elapsed > 0 && performance.now() - last.time < 50) {
+          velocityX = ((last.x - first.x) / elapsed) * 1000;
+          velocityY = ((last.y - first.y) / elapsed) * 1000;
+        }
       }
     }
     const fingerSpeed = Math.hypot(velocityX, velocityY);
