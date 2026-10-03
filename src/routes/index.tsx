@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Moon, Sun } from "lucide-react";
 import { ParticleText } from "@/components/ParticleText";
 import { WaveLoop } from "@/components/WaveLoop";
 import { RunnerGame } from "@/components/RunnerGame";
+import { SlingButton } from "@/components/SlingButton";
+import { Button } from "@/components/ui/button";
 import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
 
 export const Route = createFileRoute("/")({
@@ -12,6 +15,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Portfolio of Sujith S Poojary, UI/UX designer crafting user-centric products: research, wireframes, prototypes and design systems." },
       { property: "og:title", content: "Sujith S Poojary — UI/UX Designer" },
       { property: "og:description", content: "Playful, user-centric UI/UX design work by Sujith S Poojary." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -27,9 +32,22 @@ function useReveal() {
 
 function Index() {
   useReveal();
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const saved = window.localStorage.getItem("portfolio-theme");
+    const next = saved === "light" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+  }, []);
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    window.localStorage.setItem("portfolio-theme", next);
+  };
   return (
     <main className="overflow-x-hidden">
-      <Nav />
+      <Nav theme={theme} onToggleTheme={toggleTheme} />
       <Hero />
       <About />
       <Projects />
@@ -40,7 +58,7 @@ function Index() {
   );
 }
 
-function Nav() {
+function Nav({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme: () => void }) {
   return (
     <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
       <nav className="flex items-center gap-1 rounded-full border bg-card/80 p-1.5 shadow-soft backdrop-blur">
@@ -48,6 +66,10 @@ function Nav() {
         {["about", "work", "contact"].map((s) => (
           <a key={s} href={`#${s}`} className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors hover:bg-muted">{s}</a>
         ))}
+        <Button type="button" variant="ghost" size="icon" onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} className="theme-toggle ml-1 rounded-full">
+          <Sun aria-hidden className={theme === "dark" ? "theme-icon is-active" : "theme-icon"} />
+          <Moon aria-hidden className={theme === "light" ? "theme-icon is-active" : "theme-icon"} />
+        </Button>
       </nav>
     </header>
   );
@@ -240,6 +262,9 @@ function Footer() {
   return (
     <footer className="mx-auto max-w-6xl px-6 pb-10">
       <RunnerGame />
+      <div className="mt-6 flex justify-end pr-2">
+        <SlingButton onSend={() => window.scrollTo({ top: 0, behavior: "smooth" })} padColor="var(--sling-pad)" iconColor="var(--sling-icon)" accentColor="var(--particle)" wellColor="var(--sling-well)" bandColor="var(--sling-band)" size={56} strokeWidth={3} armAt={48} maxPull={160} launchSpeed={2600} recoil={0.2} flight={120} particles={14} spread={60} axis="any" tapSends ariaLabel="Back to top" />
+      </div>
       <p className="mt-6 text-center text-sm text-muted-foreground">© 2026 Sujith S Poojary — Designed & built with ♥</p>
     </footer>
   );
