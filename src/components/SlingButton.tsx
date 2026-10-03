@@ -18,7 +18,7 @@ type SlingButtonProps = {
   flight: number;
   particles: number;
   spread: number;
-  axis: "any";
+  axis: "any" | "vertical";
   tapSends?: boolean;
   ariaLabel: string;
 };
@@ -28,15 +28,18 @@ type Burst = { id: number; x: number; y: number; delay: number };
 export function SlingButton({ onSend, padColor, iconColor, accentColor, wellColor, bandColor, size, strokeWidth, armAt, maxPull, launchSpeed, recoil, flight, particles, spread, axis, tapSends = false, ariaLabel }: SlingButtonProps) {
   const origin = useRef<{ x: number; y: number } | null>(null);
   const dragged = useRef(false);
+  const launched = useRef(false);
   const [pull, setPull] = useState({ x: 0, y: 0 });
   const [bursts, setBursts] = useState<Burst[]>([]);
 
   const launch = () => {
+    if (launched.current) return;
+    launched.current = true;
     const seed = Date.now();
     setPull({ x: 0, y: 0 });
     setBursts(Array.from({ length: particles }, (_, i) => {
-      const angle = ((i / particles) * spread - spread / 2 - 90) * (Math.PI / 180);
-      const distance = 30 + (i % 4) * 8;
+      const angle = ((i / Math.max(1, particles - 1)) * spread - spread / 2 - 90) * (Math.PI / 180);
+      const distance = 26 + (i % 4) * 7;
       return { id: seed + i, x: Math.cos(angle) * distance, y: Math.sin(angle) * distance, delay: (i % 3) * 18 };
     }));
     window.setTimeout(() => setBursts([]), flight + 260);
@@ -46,6 +49,7 @@ export function SlingButton({ onSend, padColor, iconColor, accentColor, wellColo
   const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     origin.current = { x: event.clientX, y: event.clientY };
     dragged.current = false;
+    launched.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -53,6 +57,7 @@ export function SlingButton({ onSend, padColor, iconColor, accentColor, wellColo
     if (!origin.current) return;
     let x = event.clientX - origin.current.x;
     let y = event.clientY - origin.current.y;
+    if (axis === "vertical") x = 0;
     const distance = Math.hypot(x, y);
     if (distance > 4) dragged.current = true;
     if (distance > maxPull) {
@@ -72,6 +77,7 @@ export function SlingButton({ onSend, padColor, iconColor, accentColor, wellColo
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
+    launched.current = false;
     launch();
   };
 

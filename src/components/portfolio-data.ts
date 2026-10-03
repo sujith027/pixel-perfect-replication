@@ -1,6 +1,6 @@
 export const EMAIL = "sujithspoojary274@gmail.com";
-export const LINKEDIN = "https://www.linkedin.com/";
-export const BEHANCE = "https://www.behance.net/";
+export const LINKEDIN = "https://www.linkedin.com/in/sujithspoojary";
+export const BEHANCE = "https://www.behance.net/sujithspoojary";
 
 export const skills = ["User Research", "UI Design", "Interaction Design", "Wireframing", "Prototyping", "User Flows", "UX Audits", "Vibe Coding", "Design-to-Code"];
 export const tools = [
