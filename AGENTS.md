@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Theme-dependent canvas visuals read semantic CSS variables at draw time so saved light/dark changes update without remounting; this keeps all custom rendering aligned with the site theme.
+- The footer back-to-top control uses the full motion-driven SlingButton interaction with semantic theme colors; this preserves consistent drag physics, accessibility, and reduced-motion behavior.
