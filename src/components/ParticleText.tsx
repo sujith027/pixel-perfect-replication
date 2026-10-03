@@ -37,7 +37,7 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
         lines.forEach((l, i) => o.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size));
       }
       const data = o.getImageData(0, 0, w, h).data;
-      const gap = w < 700 ? 3 : 4;
+      const gap = w < 700 ? 4 : 5;
       parts = [];
       for (let y = 0; y < h; y += gap)
         for (let x = 0; x < w; x += gap)

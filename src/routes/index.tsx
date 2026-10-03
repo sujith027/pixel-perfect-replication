@@ -6,7 +6,10 @@ import { WaveLoop } from "@/components/WaveLoop";
 import { RunnerGame } from "@/components/RunnerGame";
 import { SlingButton } from "@/components/SlingButton";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
+import profileAsset from "@/assets/sujith-profile.jpg.asset.json";
+import resumeAsset from "@/assets/resume.pdf.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -62,7 +65,7 @@ function Nav({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme:
   return (
     <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
       <nav className="flex items-center gap-1 rounded-full border bg-card/80 p-1.5 shadow-soft backdrop-blur">
-        <a href="#top" aria-label="Back to top" className="block shrink-0 rounded-full transition-transform duration-500 ease-[cubic-bezier(.34,1.8,.5,1)] hover:scale-110"><img src="https://i.pravatar.cc/112?img=12" alt="Sujith S Poojary" width={56} height={56} className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/40 ring-offset-2 ring-offset-card shadow-soft" /></a>
+        <a href="#top" aria-label="Back to top" className="block shrink-0 rounded-full transition-transform duration-500 ease-[cubic-bezier(.34,1.8,.5,1)] hover:scale-110"><img src={profileAsset.url} alt="Sujith S Poojary" width={56} height={56} className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/40 ring-offset-2 ring-offset-card shadow-soft" /></a>
         {["about", "work", "contact"].map((s) => (
           <a key={s} href={`#${s}`} className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors hover:bg-muted">{s}</a>
         ))}
@@ -123,7 +126,7 @@ function About() {
           <div className="grid h-16 w-16 place-items-center rounded-2xl bg-grad-coral font-display text-2xl font-bold text-primary-foreground">S</div>
           <p className="mt-5 font-display text-2xl font-bold">Sujith S Poojary</p>
           <p className="text-muted-foreground">UI/UX Designer · Mangalore</p>
-          <a href="/resume.pdf" download className="mt-6 flex items-center justify-center gap-2 rounded-full bg-foreground py-3.5 font-semibold text-background transition-transform hover:scale-[1.03]">Download Resume ↓</a>
+          <a href={resumeAsset.url} download className="mt-6 flex items-center justify-center gap-2 rounded-full bg-foreground py-3.5 font-semibold text-background transition-transform hover:scale-[1.03]">Download Resume ↓</a>
           <ul className="mt-6 space-y-2 text-sm font-semibold">
             <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={`mailto:${EMAIL}`}>Email <span className="text-muted-foreground">↗</span></a></li>
             <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn <span className="text-muted-foreground">↗</span></a></li>
@@ -259,11 +262,12 @@ function Contact() {
 }
 
 function Footer() {
+  const isMobile = useIsMobile();
   return (
     <footer className="mx-auto max-w-6xl px-6 pb-10">
       <RunnerGame />
       <div className="mt-6 flex justify-end pr-2">
-        <SlingButton onSend={() => window.scrollTo({ top: 0, behavior: "smooth" })} padColor="var(--sling-pad)" iconColor="var(--sling-icon)" accentColor="var(--particle)" wellColor="var(--sling-well)" bandColor="var(--sling-band)" size={56} strokeWidth={3} armAt={48} maxPull={160} launchSpeed={2600} recoil={0.2} flight={120} particles={14} spread={60} axis="any" tapSends ariaLabel="Back to top" />
+        <SlingButton onSend={() => window.scrollTo({ top: 0, behavior: "smooth" })} padColor="var(--sling-pad)" iconColor="var(--sling-icon)" accentColor="var(--sling-accent, var(--particle))" wellColor="var(--sling-well)" bandColor="var(--sling-band)" size={isMobile ? 48 : 56} strokeWidth={3} armAt={40} maxPull={110} launchSpeed={2600} recoil={0.2} flight={100} particles={8} spread={50} axis="vertical" tapSends ariaLabel="Back to top" />
       </div>
       <p className="mt-6 text-center text-sm text-muted-foreground">© 2026 Sujith S Poojary — Designed & built with ♥</p>
     </footer>

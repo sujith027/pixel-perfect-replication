@@ -99,7 +99,8 @@
   --ring: oklch(1 0 0);
   --particle: oklch(1 0 0);
   --particle-shadow: oklch(1 0 0 / 0.2);
-  --sling-well: oklch(0.21 0 0);
+  --sling-well: oklch(0.102 0 0);
+  --sling-band: oklch(0.23 0 0);
   --shadow-soft: 0 10px 30px -12px oklch(0 0 0 / 0.5);
   --shadow-lift: 0 30px 60px -20px oklch(0 0 0 / 0.75);
 }
