@@ -1,24 +1,18 @@
-# Pixel Perfect Replication
+# Sujith S Poojary — Portfolio
 
-Implement exactly the screenshot and nothing else
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ce49c7bd-3d5e-4428-bd49-515bbd18b40e).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Personal UI/UX design portfolio, built with TanStack Start, React and Tailwind CSS, and hosted on Vercel.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/sujith027/pixel-perfect-replication.git
+cd pixel-perfect-replication
 npm i
 npm run dev
 ```
+
+## Deployment
+
+Pushes to `main` deploy to production on Vercel; other branches get preview deployments.
