@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Eye, Moon, Sun } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Eye } from "lucide-react";
 import { ParticleText } from "@/components/ParticleText";
 import { WaveLoop } from "@/components/WaveLoop";
 import { RunnerGame } from "@/components/RunnerGame";
 import { SlingButton } from "@/components/SlingButton";
-import { Button } from "@/components/ui/button";
+import { ThemeSwitch } from "@/components/unlumen-ui/theme-switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
 import profileImage from "@/assets/profile image.jpg";
@@ -35,25 +35,12 @@ function useReveal() {
 
 function Index() {
   useReveal();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    const saved = window.localStorage.getItem("portfolio-theme");
-    const next = saved === "light" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.classList.toggle("dark", next === "dark");
-  }, []);
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.classList.toggle("dark", next === "dark");
-    window.localStorage.setItem("portfolio-theme", next);
-  };
   return (
     <main className="overflow-x-hidden">
-      <Nav theme={theme} onToggleTheme={toggleTheme} />
+      <Nav />
       <Hero />
-      <About />
       <Projects />
+      <About />
       <WaveLoop />
       <Contact />
       <Footer />
@@ -61,7 +48,7 @@ function Index() {
   );
 }
 
-function Nav({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme: () => void }) {
+function Nav() {
   return (
     <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
       <nav className="flex items-center gap-1 rounded-full border bg-card/80 p-1.5 shadow-soft backdrop-blur">
@@ -77,13 +64,10 @@ function Nav({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme:
             />
           </span>
         </a>
-        {["about", "work", "contact"].map((s) => (
+        {["work", "about", "contact"].map((s) => (
           <a key={s} href={`#${s}`} className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors hover:bg-muted">{s}</a>
         ))}
-        <Button type="button" variant="ghost" size="icon" onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} className="theme-toggle ml-1 rounded-full">
-          <Sun aria-hidden className={theme === "dark" ? "theme-icon is-active" : "theme-icon"} />
-          <Moon aria-hidden className={theme === "light" ? "theme-icon is-active" : "theme-icon"} />
-        </Button>
+        <ThemeSwitch className="ml-1" />
       </nav>
     </header>
   );
@@ -118,7 +102,7 @@ function ScatterPill({ children }: { children: ReactNode }) {
 
 function About() {
   return (
-    <section id="about" className="mx-auto grid max-w-6xl gap-10 px-6 py-28 md:grid-cols-[1.4fr_1fr]">
+    <section id="about" className="mx-auto grid max-w-6xl gap-10 px-6 pt-8 pb-28 md:grid-cols-[1.4fr_1fr] md:pt-28">
       <div className="reveal">
         <p className="font-semibold text-primary">About me</p>
         <h2 className="mt-2 text-4xl font-extrabold leading-[1.2] md:text-6xl">Design isn’t just<br /><span className="rounded-2xl bg-white px-3 text-black">on the screen.</span></h2>
@@ -170,8 +154,8 @@ function Device({ kind }: { kind: string }) {
   );
 }
 
-function ProjectCard({ p, i, onOpen }: { p: (typeof projects)[number]; i: number; onOpen: () => void }) {
-  const ref = useRef<HTMLButtonElement>(null);
+function ProjectCard({ p, i }: { p: (typeof projects)[number]; i: number }) {
+  const ref = useRef<HTMLAnchorElement>(null);
   const move = (e: React.MouseEvent) => {
     const r = ref.current!.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
@@ -179,14 +163,18 @@ function ProjectCard({ p, i, onOpen }: { p: (typeof projects)[number]; i: number
   };
   return (
     <div className="reveal h-full min-h-[33.5rem]" style={{ transitionDelay: `${(i % 2) * 120}ms` }}>
-      <button ref={ref} onClick={onOpen} onMouseMove={move} onMouseLeave={() => (ref.current!.style.transform = "")}
+      <a ref={ref} href={p.href} target="_blank" rel="noreferrer" aria-label={`${p.title} — view on Behance (opens in a new tab)`}
+        onMouseMove={move} onMouseLeave={() => (ref.current!.style.transform = "")}
         className="group flex h-full w-full flex-col rounded-3xl border bg-card p-3 text-left shadow-soft transition-[transform,box-shadow] duration-300 ease-out hover:shadow-lift">
-        <div className={`relative grid aspect-4/3 place-items-center overflow-hidden rounded-2xl ${p.grad}`}>
+        {/* Image cards skip the gradient: it bleeds through the anti-aliased rounded edge as a light hairline */}
+        <div className={`relative isolate grid aspect-4/3 place-items-center overflow-hidden rounded-2xl ${p.image ? "bg-black" : p.grad}`}>
           {p.image ? (
             <img src={p.image} alt={`${p.title} project thumbnail`} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
           ) : (
             <div className="transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2"><Device kind={p.device} /></div>
           )}
+          {/* Subtle 1px stroke drawn above the image (an inset ring on the wrapper would be hidden beneath it) */}
+          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl ring-[0.5px] ring-inset ring-white/12" />
           <span className="absolute right-4 top-4 translate-x-[140%] rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0">View Project ↗</span>
         </div>
         <div className="flex flex-1 flex-col p-4">
@@ -195,18 +183,12 @@ function ProjectCard({ p, i, onOpen }: { p: (typeof projects)[number]; i: number
           <p className="mt-3 text-muted-foreground">{p.desc}</p>
           <div className="mt-auto flex flex-wrap gap-2 pt-4">{p.tags.map((t) => <span key={t} className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{t}</span>)}</div>
         </div>
-      </button>
+      </a>
     </div>
   );
 }
 
 function Projects() {
-  const [open, setOpen] = useState<number | null>(null);
-  const p = open !== null ? projects[open] : null;
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
-    addEventListener("keydown", k); return () => removeEventListener("keydown", k);
-  }, []);
   return (
     <section id="work" className="mx-auto max-w-6xl px-6 py-20">
       <div className="reveal flex items-end justify-between">
@@ -214,44 +196,26 @@ function Projects() {
         <p className="hidden text-muted-foreground md:block">03 featured projects</p>
       </div>
       <div className="mt-12 grid auto-rows-fr gap-8 md:grid-cols-2">
-        {projects.slice(0, 3).map((p, i) => <ProjectCard key={p.title} p={p} i={i} onOpen={() => setOpen(i)} />)}
+        {projects.slice(0, 3).map((p, i) => <ProjectCard key={p.title} p={p} i={i} />)}
       </div>
       <div className="mt-10 flex justify-center">
         <Link to="/work" className="inline-flex items-center gap-2 rounded-full border bg-card px-5 py-3 text-sm font-semibold transition-colors hover:bg-accent">
-          Explore more projects and Behance work <ArrowUpRight aria-hidden className="h-4 w-4" />
+          Explore My Work <ArrowUpRight aria-hidden className="h-4 w-4" />
         </Link>
       </div>
-      {p && (
-        <div role="dialog" aria-modal="true" aria-label={p.title} onClick={() => setOpen(null)} className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4 backdrop-blur-sm animate-fade-in">
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl rounded-3xl bg-card p-3 shadow-lift animate-scale-in">
-            <div className={`grid h-56 place-items-center overflow-hidden rounded-2xl ${p.grad}`}>
-              {p.image ? <img src={p.image} alt={`${p.title} project thumbnail`} className="h-full w-full object-contain" /> : <Device kind={p.device} />}
-            </div>
-            <div className="p-5">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-3xl font-bold">{p.title}</h3>
-                <button onClick={() => setOpen(null)} aria-label="Close" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-muted hover:bg-accent">✕</button>
-              </div>
-              <p className="font-semibold text-primary">{p.sub}</p>
-              <p className="mt-3 text-muted-foreground">{p.detail}</p>
-              <div className="mt-4 flex flex-wrap gap-2">{p.tags.map((t) => <span key={t} className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{t}</span>)}</div>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
 
-function Magnetic({ href, label, value }: { href: string; label: string; value: string }) {
+function Magnetic({ href, label, value, className = "" }: { href: string; label: string; value: string; className?: string }) {
   const ref = useRef<HTMLAnchorElement>(null);
   return (
     <a ref={ref} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer"
       onMouseMove={(e) => { const r = ref.current!.getBoundingClientRect(); ref.current!.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.08}px, ${(e.clientY - r.top - r.height / 2) * 0.2}px)`; }}
       onMouseLeave={() => (ref.current!.style.transform = "")}
-      className="group flex items-center justify-between rounded-2xl border bg-card px-6 py-5 transition-[transform,background] duration-300 ease-out hover:bg-accent">
-      <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground">{label}</span>
-      <span className="font-display text-lg font-bold md:text-xl">{value} ↗</span>
+      className={`group flex h-full flex-col items-start justify-center gap-1 rounded-2xl border bg-card px-4 py-4 transition-[transform,background] duration-300 ease-out hover:bg-accent sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5 ${className}`}>
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground sm:text-sm">{label}</span>
+      <span className="min-w-0 font-display text-base font-bold wrap-anywhere sm:text-lg md:text-xl">{value} ↗</span>
     </a>
   );
 }
@@ -259,78 +223,44 @@ function Magnetic({ href, label, value }: { href: string; label: string; value: 
 function Contact() {
   const [copied, setCopied] = useState(false);
   const [sent, setSent] = useState(false);
-  const [balloonPopped, setBalloonPopped] = useState(false);
-  const balloonRef = useRef<HTMLSpanElement>(null);
-  const arrowRef = useRef<HTMLSpanElement>(null);
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const copyEmail = () => { navigator.clipboard.writeText(EMAIL); setCopied(true); setTimeout(() => setCopied(false), 1600); };
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (sent) return;
     const f = new FormData(e.currentTarget);
     const mailto = `mailto:${EMAIL}?subject=${encodeURIComponent(`Project enquiry from ${f.get("name")}`)}&body=${encodeURIComponent(`${f.get("message")}\n\n— ${f.get("name")} (${f.get("email")})`)}`;
     setSent(true);
-
-    const arrow = arrowRef.current;
-    const balloon = balloonRef.current;
-    const button = submitButtonRef.current;
-    const start = button?.getBoundingClientRect();
-    const target = balloon?.getBoundingClientRect();
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const openMail = () => { window.location.href = mailto; };
-    const popBalloon = () => {
-      setBalloonPopped(true);
-      window.setTimeout(() => {
-        setBalloonPopped(false);
-        setSent(false);
-      }, 5000);
-    };
-
-    if (!arrow || !start || !target || reducedMotion) {
-      popBalloon();
-      window.setTimeout(openMail, 300);
-      return;
-    }
-
-    const arrowSize = 36;
-    const startX = start.left + start.width / 2 - arrowSize / 2;
-    const startY = start.top + start.height / 2 - arrowSize / 2;
-    const targetX = target.left + target.width / 2 - arrowSize / 2;
-    const targetY = target.top + target.height / 2 - arrowSize / 2;
-    const animation = arrow.animate(
-      [
-        { opacity: 0, transform: `translate3d(${startX}px, ${startY}px, 0) rotate(-35deg) scale(.55)` },
-        { opacity: 1, transform: `translate3d(${startX}px, ${startY}px, 0) rotate(-25deg) scale(1)`, offset: 0.14 },
-        { opacity: 1, transform: `translate3d(${targetX}px, ${targetY}px, 0) rotate(0deg) scale(1)`, offset: 0.88 },
-        { opacity: 0, transform: `translate3d(${targetX}px, ${targetY}px, 0) rotate(20deg) scale(.35)` },
-      ],
-      { duration: 760, easing: "cubic-bezier(0.23, 1, 0.32, 1)" },
-    );
-    animation.onfinish = () => {
-      popBalloon();
-      window.setTimeout(openMail, 420);
-    };
+    window.location.href = mailto;
+    window.setTimeout(() => setSent(false), 3000);
   };
   return (
     <section id="contact" className="mx-auto max-w-4xl px-6 pt-14 pb-28 text-center">
-      <p className="reveal font-semibold text-primary">Got a freelance project?</p>
-      <h2 className="reveal mt-2 text-5xl font-extrabold md:text-7xl">Let's work together <span ref={balloonRef} aria-hidden="true" className={`contact-balloon${balloonPopped ? " is-popped" : ""}`}>🎈</span></h2>
-      <p className="reveal mx-auto mt-5 max-w-lg text-lg text-muted-foreground">Open to freelance UI/UX work, product collaborations and friendly design chats.</p>
+      <p className="reveal font-semibold text-primary">Have something in mind?</p>
+      <h2 className="reveal mt-2 text-5xl font-extrabold md:text-7xl">Let's make something happen.</h2>
+      <p className="reveal mx-auto mt-5 max-w-lg text-lg text-muted-foreground">Have a project, an idea to explore, or just want to talk design? My inbox is open.</p>
       <form onSubmit={submit} className="reveal mx-auto mt-12 grid max-w-2xl gap-6 rounded-3xl border bg-card p-8 text-left shadow-soft md:grid-cols-2">
         <div className="float-field"><input id="name" name="name" required placeholder=" " /><label htmlFor="name">Your name</label></div>
-        <div className="float-field"><input id="email" name="email" type="email" required placeholder=" " /><label htmlFor="email">Email</label></div>
-        <div className="float-field md:col-span-2"><textarea id="message" name="message" rows={3} required placeholder=" " /><label htmlFor="message">Tell me about your project</label></div>
-        <button ref={submitButtonRef} disabled={sent} className="rounded-full bg-primary py-4 font-semibold text-primary-foreground transition-transform hover:scale-[1.02] disabled:cursor-wait md:col-span-2">Send message →</button>
+        <div className="float-field"><input id="email" name="email" type="email" required placeholder=" " /><label htmlFor="email">Email address</label></div>
+        <div className="float-field md:col-span-2"><textarea id="message" name="message" rows={3} required placeholder=" " /><label htmlFor="message">What's on your mind?</label></div>
+        <button disabled={sent} className="rounded-full bg-primary py-4 font-semibold text-primary-foreground transition-transform hover:scale-[1.02] disabled:cursor-wait md:col-span-2">Let's talk ↗</button>
       </form>
       <div className="reveal mx-auto mt-10 grid max-w-2xl gap-3 text-left">
         <div className="flex gap-3">
-          <div className="flex-1"><Magnetic href={`mailto:${EMAIL}`} label="Email" value={EMAIL} /></div>
-          <button onClick={() => { navigator.clipboard.writeText(EMAIL); setCopied(true); setTimeout(() => setCopied(false), 1600); }}
-            className="shrink-0 rounded-2xl border bg-card px-5 font-semibold transition-colors hover:bg-accent">{copied ? "Copied!" : "Copy"}</button>
+          {/* On mobile the copy button sits inside the email card, below the address; pb-16 reserves its space */}
+          <div className="relative min-w-0 flex-1">
+            <Magnetic href={`mailto:${EMAIL}`} label="Email" value={EMAIL} className="pb-16 sm:pb-5" />
+            <button type="button" onClick={copyEmail} aria-label={copied ? "Email copied" : "Copy email"}
+              className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-accent sm:hidden">
+              {copied ? <Check aria-hidden className="h-3.5 w-3.5" /> : <Copy aria-hidden className="h-3.5 w-3.5" />}
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <button type="button" onClick={copyEmail}
+            className="hidden shrink-0 rounded-2xl border bg-card px-5 font-semibold transition-colors hover:bg-accent sm:block">{copied ? "Copied!" : "Copy"}</button>
         </div>
         <Magnetic href={LINKEDIN} label="LinkedIn" value="Connect" />
         <Magnetic href={BEHANCE} label="Behance" value="See shots" />
       </div>
-      <span ref={arrowRef} aria-hidden="true" className="contact-arrow"><ArrowUpRight size={26} strokeWidth={2.5} /></span>
     </section>
   );
 }
@@ -344,7 +274,7 @@ function Footer() {
         <span className="max-w-40 text-right text-xs text-muted-foreground">Drag down and release to return to top</span>
         <SlingButton onSend={() => window.scrollTo({ top: 0, behavior: "smooth" })} padColor="var(--sling-pad)" iconColor="var(--sling-icon)" accentColor="var(--sling-accent, var(--particle))" wellColor="var(--sling-well)" bandColor="var(--sling-band)" size={isMobile ? 40 : 48} strokeWidth={3} armAt={40} maxPull={110} launchSpeed={2600} recoil={0.2} flight={100} particles={8} spread={50} axis="vertical" tapSends ariaLabel="Back to top" />
       </div>
-      <p className="mt-6 text-center text-sm text-muted-foreground">© 2026 Sujith S Poojary — Designed & built with ♥</p>
+      <p className="mt-6 text-center text-sm text-muted-foreground">No pixels were harmed. Many were moved. © 2026 - Sujith S Poojary</p>
     </footer>
   );
 }

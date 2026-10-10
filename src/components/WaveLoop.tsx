@@ -34,14 +34,17 @@ export function WaveLoop() {
   const font = { fontSize: 46, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: "0.02em" };
 
   return (
-    <section aria-label="What I do" className="relative -mx-[5vw] overflow-hidden py-10"
-      onMouseEnter={() => tween.current?.pause()} onMouseLeave={() => tween.current?.resume()}>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-[200px] w-[110vw] md:h-[300px]" aria-hidden>
-        <path id="wave-path" d={d} fill="none" className="stroke-ribbon" strokeWidth={86} strokeLinecap="round" />
-        <text ref={measure} style={font} className="opacity-0">{UNIT.toUpperCase()}</text>
-        <text style={font} className="fill-ink" dominantBaseline="central">
-          <textPath ref={tp} href="#wave-path" startOffset="0">{text}</textPath>
-        </text>
+    <section aria-label="What I do" className="relative -mx-[5vw] overflow-hidden py-2 md:py-10">
+      {/* On mobile the band only fills ~40–160px of the 200px-tall SVG; negative margins let the section clip the empty space */}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="-my-6 block h-[200px] w-[110vw] md:my-0 md:h-[300px]" aria-hidden>
+        <text ref={measure} style={font} className="pointer-events-none opacity-0">{UNIT.toUpperCase()}</text>
+        {/* Pause only while the pointer is over the painted ribbon, not the empty area around it */}
+        <g onMouseEnter={() => tween.current?.pause()} onMouseLeave={() => tween.current?.resume()}>
+          <path id="wave-path" d={d} fill="none" className="stroke-ribbon" strokeWidth={86} strokeLinecap="round" />
+          <text style={font} className="fill-ink" dominantBaseline="central">
+            <textPath ref={tp} href="#wave-path" startOffset="0">{text}</textPath>
+          </text>
+        </g>
       </svg>
       <p className="sr-only">UI Design, UX Research, Prototyping, Interaction Design, Wireframing, Design-to-Code</p>
     </section>
