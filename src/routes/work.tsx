@@ -22,7 +22,6 @@ function WorkPage() {
             Back to portfolio
           </Link>
           <nav aria-label="Work page sections" className="flex items-center gap-4 text-sm font-semibold">
-            <a href="#more-projects" className="transition-colors hover:text-primary">More projects</a>
             <a href="#behance-work" className="transition-colors hover:text-primary">Behance</a>
           </nav>
         </div>
@@ -48,7 +47,7 @@ function WorkPage() {
           {moreProjects.map((project) => (
             <a key={project.href} href={project.href} target="_blank" rel="noreferrer" className="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-soft transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-lift">
               <span className="font-display text-sm font-bold text-muted-foreground">{project.number}</span>
-              <div aria-hidden="true" className={`mt-4 h-1.5 w-14 rounded-full ${project.accent}`} />
+              <div aria-hidden="true" className="mt-4 h-1.5 w-14 rounded-full bg-foreground" />
               <h3 className="mt-8 font-display text-2xl font-bold leading-tight">{project.title}</h3>
               <p className="mt-1 font-display text-lg font-medium text-muted-foreground">{project.sub}</p>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{project.detail}</p>
@@ -94,7 +93,7 @@ function WorkPage() {
             >
               <div className="relative aspect-4/3 overflow-hidden bg-muted">
                 <img src={project.image} alt={`${project.title} on Behance`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                <span className="absolute right-3 top-3 translate-x-[140%] rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0 group-focus-visible:translate-x-0">View project ↗</span>
+                <span className="absolute right-3 top-3 inline-flex translate-x-[140%] items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0 group-focus-visible:translate-x-0">View project <ArrowUpRight aria-hidden className="h-4 w-4" /></span>
               </div>
               <div className="p-5">
                 <h3 className="font-display text-xl font-bold">{project.title}</h3>

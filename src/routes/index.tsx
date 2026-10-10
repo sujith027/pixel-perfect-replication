@@ -1,15 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Check, Copy, Eye } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Check, Copy } from "lucide-react";
 import { ParticleText } from "@/components/ParticleText";
 import { WaveLoop } from "@/components/WaveLoop";
 import { RunnerGame } from "@/components/RunnerGame";
 import { SlingButton } from "@/components/SlingButton";
 import { ThemeSwitch } from "@/components/unlumen-ui/theme-switch";
+import { AboutStack } from "@/components/AboutStack";
+import { HeroPill } from "@/components/HeroPill";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BEHANCE, EMAIL, LINKEDIN, projects, skills, tools } from "@/components/portfolio-data";
+import { BEHANCE, EMAIL, LINKEDIN, experience, projects, skills, tools } from "@/components/portfolio-data";
 import profileImage from "@/assets/profile image.jpg";
 import resumePdf from "@/assets/Resume.pdf";
+import sujithAvatar from "@/assets/sujith-avatar.webp";
+import emailIllustration from "@/assets/email-illustration.webp";
+import linkedinIllustration from "@/assets/linkedin-illustration.webp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,6 +46,7 @@ function Index() {
       <Hero />
       <Projects />
       <About />
+      <Experience />
       <WaveLoop />
       <Contact />
       <Footer />
@@ -75,9 +81,12 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20">
-      <p className="reveal mb-2 rounded-full border bg-card px-4 py-1.5 text-sm font-semibold shadow-soft">👋 Hi, I'm Sujith S Poojary</p>
-      <div className="h-[46vh] w-full max-w-7xl">
+    // Phones: the section hugs its content (no full-screen height, no centring) so the gaps between the nav,
+    // the greeting pill, the heading and the tagline stay tight; the heading box is only as tall as the logo.
+    <section id="top" className="relative flex flex-col items-center justify-center px-4 pt-20 md:min-h-screen max-md:min-h-0 max-md:justify-start max-md:pb-24 max-md:pt-[7.25rem]">
+      <HeroPill />
+      {/* Phones: the heading box is 1.5rem wider than the padded column (it bleeds 0.75rem each side) so the logo can run closer to the screen edges. */}
+      <div className="h-28 w-full max-w-7xl max-md:w-[calc(100%+1.5rem)] md:h-[46vh]">
         <ParticleText text="UI/UX Designer" src="/logo.svg" />
       </div>
       <p className="reveal max-w-md text-center text-muted-foreground">Bringing creativity into every interface.</p>
@@ -116,24 +125,82 @@ function About() {
         <div className="mt-4 flex flex-wrap gap-2">{skills.map((s) => <ScatterPill key={s}>{s}</ScatterPill>)}</div>
         <h3 className="mt-8 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tools</h3>
         <div className="mt-4 flex flex-wrap gap-2">
-          {tools.map((t) => <ScatterPill key={t.name}><span className="text-primary" aria-hidden>{t.icon}</span>{t.name}</ScatterPill>)}
+          {tools.map((t) => (
+            <ScatterPill key={t.name}>
+              <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4 shrink-0 fill-current text-primary">
+                <path d={t.path} fillRule={"evenOdd" in t ? "evenodd" : undefined} />
+              </svg>
+              {t.name}
+            </ScatterPill>
+          ))}
         </div>
       </div>
-      <aside className="reveal self-start rounded-3xl bg-grad-mix p-1.5 shadow-lift md:rotate-2 transition-transform hover:rotate-0">
-        <div className="rounded-[1.4rem] bg-card p-8">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-grad-coral font-display text-2xl font-bold text-primary-foreground">S</div>
-          <p className="mt-5 font-display text-2xl font-bold">Sujith S Poojary</p>
-          <p className="text-muted-foreground">UI/UX Designer · Mangalore</p>
-          <a href={resumePdf} target="_blank" rel="noreferrer" className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-foreground py-3.5 font-semibold text-background transition-transform hover:scale-[1.03]">
-            <Eye aria-hidden className="h-4 w-4" />
-            View Resume
-          </a>
-          <ul className="mt-6 space-y-2 text-sm font-semibold">
-            <li><a className="flex min-w-0 justify-between gap-3 rounded-xl px-3 py-2 hover:bg-muted" href={`mailto:${EMAIL}`}><span className="min-w-0 truncate">{EMAIL}</span><span className="text-muted-foreground">↗</span></a></li>
-            <li><a className="flex justify-between rounded-xl px-3 py-2 hover:bg-muted" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn <span className="text-muted-foreground">↗</span></a></li>
-          </ul>
-        </div>
+      <aside className="reveal self-center py-6 md:py-0">
+        <AboutStack
+          cards={[
+            {
+              role: "UI/UX Designer · Mangalore",
+              name: "Sujith S Poojary",
+              description: "Junior UI/UX Designer at CocoGrid, crafting interfaces that feel natural and purposeful.",
+              imageSrc: sujithAvatar,
+              imageAlt: "Illustrated portrait of Sujith S Poojary",
+              isFeatured: true,
+              ctaLabel: "View resume",
+              ctaHref: resumePdf,
+            },
+            {
+              role: "Say hello",
+              name: "Email me",
+              description: "Have a project or an idea to explore? My inbox is always open.",
+              imageSrc: emailIllustration,
+              imageAlt: "Illustration of Sujith opening an envelope",
+              ctaLabel: "Send email",
+              ctaHref: `mailto:${EMAIL}`,
+            },
+            {
+              role: "Let's connect",
+              name: "LinkedIn",
+              description: "Follow along for design work, collaborations and friendly chats.",
+              imageSrc: linkedinIllustration,
+              imageAlt: "Illustration of Sujith pointing at a LinkedIn badge",
+              ctaLabel: "Connect",
+              ctaHref: LINKEDIN,
+            },
+          ]}
+        />
       </aside>
+    </section>
+  );
+}
+
+function Experience() {
+  return (
+    <section id="experience" className="mx-auto max-w-6xl px-6 pb-16 md:pb-20">
+      <p className="reveal font-semibold text-primary">Career</p>
+      <h2 className="reveal mt-2 text-4xl font-extrabold md:text-6xl">Work experience</h2>
+      <div className="reveal mt-8 flex max-w-3xl items-start gap-4 rounded-2xl border bg-card p-5 md:gap-5 md:p-6">
+        <span aria-hidden className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-foreground text-background md:h-[4.5rem] md:w-[4.5rem]">
+          <BriefcaseBusiness className="h-7 w-7" strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="font-display text-2xl font-bold leading-tight tracking-tight md:text-[1.75rem]">{experience.role}</h3>
+          <p className="mt-2 font-display text-lg font-bold md:text-xl">{experience.company} · {experience.location}</p>
+          <p className="mt-2 text-base text-muted-foreground">{experience.period}</p>
+          {/* LinkedIn-style timeline: a vertical line joins the roles held here, earliest first, the current one lit. */}
+          <p className="mt-5 text-xs font-bold uppercase tracking-widest text-muted-foreground">Career progression</p>
+          <ol className="mt-3 space-y-3 border-l border-border pl-5">
+            {experience.progression.map((step, index) => {
+              const current = index === experience.progression.length - 1;
+              return (
+                <li key={step} className={`relative text-base ${current ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                  <span aria-hidden className={`absolute -left-[1.6rem] top-[0.4rem] h-2.5 w-2.5 rounded-full border-2 ${current ? "border-foreground bg-foreground" : "border-muted-foreground bg-card"}`} />
+                  {step}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </div>
     </section>
   );
 }
@@ -175,7 +242,7 @@ function ProjectCard({ p, i }: { p: (typeof projects)[number]; i: number }) {
           )}
           {/* Subtle 1px stroke drawn above the image (an inset ring on the wrapper would be hidden beneath it) */}
           <span aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl ring-[0.5px] ring-inset ring-white/12" />
-          <span className="absolute right-4 top-4 translate-x-[140%] rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0">View Project ↗</span>
+          <span className="absolute right-4 top-4 inline-flex translate-x-[140%] items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform duration-300 group-hover:translate-x-0">View Project <ArrowUpRight aria-hidden className="h-4 w-4" /></span>
         </div>
         <div className="flex flex-1 flex-col p-4">
           <h3 className="font-display text-3xl font-bold leading-tight">{p.title}</h3>
@@ -190,7 +257,7 @@ function ProjectCard({ p, i }: { p: (typeof projects)[number]; i: number }) {
 
 function Projects() {
   return (
-    <section id="work" className="mx-auto max-w-6xl px-6 py-20">
+    <section id="work" className="mx-auto max-w-6xl px-6 py-20 max-md:pt-4">
       <div className="reveal flex items-end justify-between">
         <div><p className="font-semibold text-primary">Selected work</p><h2 className="mt-2 text-4xl font-extrabold md:text-6xl">Projects ✦</h2></div>
         <p className="hidden text-muted-foreground md:block">03 featured projects</p>
@@ -215,7 +282,7 @@ function Magnetic({ href, label, value, className = "" }: { href: string; label:
       onMouseLeave={() => (ref.current!.style.transform = "")}
       className={`group flex h-full flex-col items-start justify-center gap-1 rounded-2xl border bg-card px-4 py-4 transition-[transform,background] duration-300 ease-out hover:bg-accent sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5 ${className}`}>
       <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground sm:text-sm">{label}</span>
-      <span className="min-w-0 font-display text-base font-bold wrap-anywhere sm:text-lg md:text-xl">{value} ↗</span>
+      <span className="inline-flex min-w-0 items-center gap-2 font-display text-base font-bold wrap-anywhere sm:text-lg md:text-xl">{value} <ArrowUpRight aria-hidden className="h-4 w-4 shrink-0" /></span>
     </a>
   );
 }
@@ -242,7 +309,7 @@ function Contact() {
         <div className="float-field"><input id="name" name="name" required placeholder=" " /><label htmlFor="name">Your name</label></div>
         <div className="float-field"><input id="email" name="email" type="email" required placeholder=" " /><label htmlFor="email">Email address</label></div>
         <div className="float-field md:col-span-2"><textarea id="message" name="message" rows={3} required placeholder=" " /><label htmlFor="message">What's on your mind?</label></div>
-        <button disabled={sent} className="rounded-full bg-primary py-4 font-semibold text-primary-foreground transition-transform hover:scale-[1.02] disabled:cursor-wait md:col-span-2">Let's talk ↗</button>
+        <button disabled={sent} className="inline-flex items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground transition-transform hover:scale-[1.02] disabled:cursor-wait md:col-span-2">Let's talk <ArrowUpRight aria-hidden className="h-4 w-4" /></button>
       </form>
       <div className="reveal mx-auto mt-10 grid max-w-2xl gap-3 text-left">
         <div className="flex gap-3">
