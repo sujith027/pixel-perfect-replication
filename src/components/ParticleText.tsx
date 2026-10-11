@@ -1,50 +1,51 @@
 import { useEffect, useRef, useState } from "react";
 
-// Hero heading: clean solid type. On hover a black hole opens at the cursor: the type around it hands over to
-// particles sampled from its own pixels, and a radial force field (vertex shader) bulges those particles away
-// from the centre, strongest there and falling off smoothly. Away from the cursor the heading stays solid.
-// Positions are a pure function of each particle's home, the smoothed cursor and the eased hover progress, so
-// nothing drifts or builds up velocity, and leaving always restores the exact original type.
+// Hero heading: clean solid type, disturbed only around the cursor. The type is sampled into particles (each
+// with a fixed home on a glyph, a position and a velocity) but they only wake up near the pointer. A woken
+// ("released") particle is simulated with a black-hole force field (radial push + tangential swirl + a little
+// turbulence, smooth falloff) and a weakened spring home, so it breaks away from its glyph, scatters, may
+// overshoot the field, then settles back. While anything is released, WebGL draws the same type texture as
+// the 2D canvas, erases the pixels around each released particle's home (feathered by its release amount) and
+// draws the particle at its current position, so glyph and particle are one object: the type breaks apart
+// rather than gaining dots on top. Everything else is the untouched type texture. When all particles are home
+// the 2D type shows again and the loop sleeps.
 
-const LATTICE = 2; // css px between sampled particles (each is jittered inside its cell, so no grid shows)
-const POINT = 1; // particle size in css px (rounded to whole device pixels so each dot renders at full colour)
+const LATTICE = 0.9; // css px between sampled particles (jittered inside its cell so no grid shows)
+const POINT = 1; // particle size in css px
+const ERASE = 1.7; // css px of type removed around a released particle's home (slightly larger than POINT)
 const HOVER_PAD = 10; // css px around the text box that still counts as hovering
 
-// Where the type turns into particles, as multiples of the void radius: solid outside OUTER, particles inside INNER.
-const INNER = 1.0, OUTER = 1.06;
+const RADIUS = 80; // force-field radius, css px
+const RELEASE_INNER = 0.4, RELEASE_OUTER = 1.5; // release ramps from none at OUTER×radius to full at INNER×radius
+const RADIAL = 1150; // outward acceleration at the cursor, px/s²
+const SWIRL = 420; // tangential acceleration at the cursor, px/s²
+const TURBULENCE = 140; // random-looking wobble inside the field, px/s²
+const SPRING = 38; // pull back to home, 1/s²
+const LOOSEN = 0.6; // how much the field slackens the spring
+const DAMPING = 8; // velocity drag, 1/s
+const STRIDE = 5; // floats per particle in the GPU buffer: x, y, homeX, homeY, release
 
 const PARTICLE_VERTEX = `
+attribute vec2 aPos;
 attribute vec2 aHome;
-uniform vec2 uSize;      // canvas size, css px
-uniform vec2 uMouse;     // void centre, css px
-uniform float uRadius;   // void radius, css px
-uniform float uStrength; // 0..1
-uniform float uPoint;    // point size, device px
-varying float vAlpha;
+attribute float aRelease;
+uniform vec2 uSize;   // canvas size, css px
+uniform float uPoint; // point size, device px
+uniform float uErase; // 1.0 = draw at home as an eraser, 0.0 = draw at the current position
+varying float vRelease;
 void main() {
-  vec2 d = aHome - uMouse;
-  float dist = length(d);
-  vec2 dir = dist > 0.0001 ? d / dist : vec2(0.0, -1.0);
-  // Gaussian push: displaced distance = dist + A * exp(-(dist/R)^2). A = 0.6 R stays monotonic, so particles
-  // bulge outward smoothly around a clear void instead of piling up in a ring.
-  float g = exp(-(dist * dist) / (uRadius * uRadius));
-  float push = uStrength * 0.6 * uRadius * g;
-  vec2 p = aHome + dir * push + vec2(-dir.y, dir.x) * push * 0.12;
-  vec2 clip = p / uSize * 2.0 - 1.0;
-  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  vec2 p = uErase > 0.5 ? aHome : aPos;
+  gl_Position = vec4(p.x / uSize.x * 2.0 - 1.0, 1.0 - p.y / uSize.y * 2.0, 0.0, 1.0);
   gl_PointSize = uPoint;
-  // Particles exist only where the solid type has handed over to them (by home distance, matching the mask).
-  vAlpha = uStrength * (1.0 - smoothstep(${INNER.toFixed(2)} * uRadius, ${OUTER.toFixed(2)} * uRadius, dist));
+  vRelease = aRelease;
+  if (aRelease < 0.004) gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // not released: not drawn at all
 }`;
 const PARTICLE_FRAGMENT = `
 precision mediump float;
 uniform vec3 uColor;
-varying float vAlpha;
-void main() {
-  // Crisp dots in exactly the heading's colour; only the handover (vAlpha) fades them.
-  gl_FragColor = vec4(uColor * vAlpha, vAlpha);
-}`;
-// The solid type as a textured quad, hidden around the cursor exactly where the particles take over.
+varying float vRelease;
+void main() { gl_FragColor = vec4(uColor * vRelease, vRelease); }`;
+// The solid type as a textured quad: the same pixels as the 2D canvas.
 const SOLID_VERTEX = `
 attribute vec2 aCorner;
 varying vec2 vUv;
@@ -55,22 +56,9 @@ void main() {
 const SOLID_FRAGMENT = `
 precision mediump float;
 uniform sampler2D uType;
-uniform vec2 uSize;
-uniform vec2 uMouse;
-uniform float uRadius;
-uniform float uStrength;
 varying vec2 vUv;
-void main() {
-  float dist = length(vUv * uSize - uMouse);
-  float keep = mix(1.0, smoothstep(${INNER.toFixed(2)} * uRadius, ${OUTER.toFixed(2)} * uRadius, dist), uStrength);
-  gl_FragColor = texture2D(uType, vUv) * keep;
-}`;
+void main() { gl_FragColor = texture2D(uType, vUv); }`;
 
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-const smoothstep = (a: number, b: number, v: number) => {
-  const t = clamp01((v - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 // Exponential approach that behaves the same at any frame rate (rate is per 60fps frame).
 const ease = (rate: number, frames: number) => 1 - Math.pow(1 - rate, frames);
 
@@ -112,7 +100,10 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
     const box = { x: 0, y: 0, w: 0, h: 0 };
     let color: readonly [number, number, number] = [1, 1, 1];
 
-    // Two WebGL programs (particles, masked solid type); without WebGL or under reduced motion the 2D type stays.
+    // Simulation state per particle: velocity, mass (spring/return stagger) and the interleaved GPU buffer
+    // (position, home, release). `release` is 0 for a particle resting on its glyph, up to 1 when fully broken away.
+    let vel = new Float32Array(0), mass = new Float32Array(0), gpu = new Float32Array(0);
+
     type Prog = { program: WebGLProgram; u: Record<string, WebGLUniformLocation | null> };
     let particles: Prog | null = null, type: Prog | null = null;
     let particleBuffer: WebGLBuffer | null = null, quadBuffer: WebGLBuffer | null = null, texture: WebGLTexture | null = null;
@@ -131,20 +122,20 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       return { program, u: Object.fromEntries(uniforms.map((name) => [name, gl.getUniformLocation(program, name)])) };
     };
     if (gl) {
-      particles = makeProgram(PARTICLE_VERTEX, PARTICLE_FRAGMENT, ["uSize", "uMouse", "uRadius", "uStrength", "uPoint", "uColor"]);
-      type = makeProgram(SOLID_VERTEX, SOLID_FRAGMENT, ["uType", "uSize", "uMouse", "uRadius", "uStrength"]);
+      particles = makeProgram(PARTICLE_VERTEX, PARTICLE_FRAGMENT, ["uSize", "uPoint", "uErase", "uColor"]);
+      type = makeProgram(SOLID_VERTEX, SOLID_FRAGMENT, ["uType"]);
       particleBuffer = gl.createBuffer();
       quadBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
       texture = gl.createTexture();
       gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
     const ready = () => !!(gl && particles && type);
 
-    // Interaction state: hover eases 0 → 1 → 0; the void centre follows the pointer smoothly.
-    let inside = false, hover = 0, raf = 0, last = 0;
+    // Interaction state. `field` eases 0 → 1 → 0 with the hover and scales the force and the release; the cursor
+    // centre follows the pointer smoothly.
+    let inside = false, field = 0, released = 0, raf = 0, last = 0;
     const pointer = { x: 0, y: 0 }, centre = { x: 0, y: 0 };
 
     const paintSolid = () => {
@@ -169,7 +160,7 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       ctx.fillStyle = `rgb(${r * 255} ${g * 255} ${b * 255})`;
       ctx.fillRect(0, 0, width, height);
       ctx.globalCompositeOperation = "source-over";
-      // The same pixels become the WebGL type texture, so the masked type matches the 2D type exactly.
+      // The same pixels become the WebGL type texture, so the type drawn while particles are loose matches the 2D type.
       if (gl && texture) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -199,39 +190,47 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       box.y = (height - box.h) / 2;
       paintSolid();
 
-      // Particles come from the rendered heading's own pixels: every glyph, on a fine jittered lattice
-      // (a seeded generator keeps the layout identical on every rebuild, and no moiré forms when it bulges).
+      // Particles come from the rendered heading's own pixels, one per lattice cell covered by type (a seeded
+      // generator keeps the layout identical on every rebuild). Homes are fixed for the particle's whole life.
       if (gl && ready()) {
         const pixels = ctx.getImageData(0, 0, solid.width, solid.height).data;
-        const data: number[] = [];
+        const homes: number[] = [];
         let seed = 1;
         const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
         for (let gy = box.y; gy < box.y + box.h; gy += LATTICE) {
           for (let gx = box.x; gx < box.x + box.w; gx += LATTICE) {
             const x = gx + random() * LATTICE, y = gy + random() * LATTICE;
-            if ((pixels[(Math.floor(y * dpr) * solid.width + Math.floor(x * dpr)) * 4 + 3] ?? 0) > 60) data.push(x, y);
+            if ((pixels[(Math.floor(y * dpr) * solid.width + Math.floor(x * dpr)) * 4 + 3] ?? 0) > 60) homes.push(x, y);
           }
         }
-        count = data.length / 2;
+        count = homes.length / 2;
+        gpu = new Float32Array(count * STRIDE);
+        vel = new Float32Array(count * 2);
+        mass = new Float32Array(count);
+        for (let i = 0; i < count; i++) {
+          const o = i * STRIDE;
+          gpu[o] = gpu[o + 2] = homes[i * 2]!;
+          gpu[o + 1] = gpu[o + 3] = homes[i * 2 + 1]!;
+          mass[i] = 0.75 + random() * 0.5; // varied weight staggers the scatter and the return
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, gpu, gl.DYNAMIC_DRAW);
         gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+        released = 0;
+        field = 0;
       }
       return true;
     };
 
-    const render = () => {
-      // At rest the exact 2D type shows; while the effect is live WebGL draws the same type, masked around
-      // the void, plus the particles that take over there. The void eases in and out with the hover.
-      const live = ready() && hover > 0.001;
-      solid.style.opacity = live ? "0" : "1";
+    // Composite while particles are loose: type texture, then erase under each released particle's home, then
+    // the particles themselves. With nothing loose the GL canvas is cleared and the 2D type shows alone.
+    const draw = (visible: boolean) => {
       if (!gl || !ready()) return;
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      if (!live) return;
-      const strength = smoothstep(0, 1, hover);
-      const radius = width < 700 ? 60 : 100;
+      if (!visible) return;
 
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(type!.program);
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
       const corner = gl.getAttribLocation(type!.program, "aCorner");
@@ -240,38 +239,105 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.uniform1i(type!.u["uType"]!, 0);
-      gl.uniform2f(type!.u["uSize"]!, width, height);
-      gl.uniform2f(type!.u["uMouse"]!, centre.x, centre.y);
-      gl.uniform1f(type!.u["uRadius"]!, radius);
-      gl.uniform1f(type!.u["uStrength"]!, strength);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.disableVertexAttribArray(corner);
 
       gl.useProgram(particles!.program);
       gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
-      const home = gl.getAttribLocation(particles!.program, "aHome");
-      gl.enableVertexAttribArray(home);
-      gl.vertexAttribPointer(home, 2, gl.FLOAT, false, 0, 0);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, gpu);
+      const bytes = STRIDE * 4;
+      const aPos = gl.getAttribLocation(particles!.program, "aPos");
+      const aHome = gl.getAttribLocation(particles!.program, "aHome");
+      const aRelease = gl.getAttribLocation(particles!.program, "aRelease");
+      gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, bytes, 0);
+      gl.enableVertexAttribArray(aHome); gl.vertexAttribPointer(aHome, 2, gl.FLOAT, false, bytes, 8);
+      gl.enableVertexAttribArray(aRelease); gl.vertexAttribPointer(aRelease, 1, gl.FLOAT, false, bytes, 16);
       gl.uniform2f(particles!.u["uSize"]!, width, height);
-      gl.uniform2f(particles!.u["uMouse"]!, centre.x, centre.y);
-      gl.uniform1f(particles!.u["uRadius"]!, radius);
-      gl.uniform1f(particles!.u["uStrength"]!, strength);
-      gl.uniform1f(particles!.u["uPoint"]!, Math.max(1, Math.round(POINT * dpr)));
       gl.uniform3f(particles!.u["uColor"]!, color[0], color[1], color[2]);
+
+      gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA); // erase: dst *= 1 - release
+      gl.uniform1f(particles!.u["uErase"]!, 1);
+      gl.uniform1f(particles!.u["uPoint"]!, Math.max(1, Math.ceil(ERASE * dpr)));
       gl.drawArrays(gl.POINTS, 0, count);
-      gl.disableVertexAttribArray(home);
+
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // particles at their current positions
+      gl.uniform1f(particles!.u["uErase"]!, 0);
+      gl.uniform1f(particles!.u["uPoint"]!, Math.max(1, Math.round(POINT * dpr)));
+      gl.drawArrays(gl.POINTS, 0, count);
+
+      gl.disableVertexAttribArray(aPos); gl.disableVertexAttribArray(aHome); gl.disableVertexAttribArray(aRelease);
+    };
+
+    // Advance every particle by dt seconds; returns how many are still released.
+    const simulate = (dt: number, time: number) => {
+      const radius = width < 700 ? RADIUS * 0.6 : RADIUS;
+      const r2 = radius * radius, inner = radius * RELEASE_INNER, outer = radius * RELEASE_OUTER;
+      const cx = centre.x, cy = centre.y;
+      let active = 0;
+      for (let i = 0; i < count; i++) {
+        const o = i * STRIDE, iv = i * 2;
+        const hx = gpu[o + 2]!, hy = gpu[o + 3]!;
+        let rel = gpu[o + 4]!;
+
+        // Activation: a smooth function of the distance from the cursor to the particle's home on the glyph. Once
+        // released a particle stays released until it is back home, so it keeps its motion after the cursor passes.
+        if (field > 0.002) {
+          const hdx = hx - cx, hdy = hy - cy, hd2 = hdx * hdx + hdy * hdy;
+          if (hd2 < outer * outer) {
+            const t = Math.min(1, Math.max(0, ((outer - Math.sqrt(hd2)) / (outer - inner)) * 2.2)); // short feather: a half-released type pixel looks grey
+            const act = t * t * (3 - 2 * t) * field;
+            if (act > rel) rel = act;
+          }
+        }
+        if (rel < 0.004) {
+          if (rel !== 0 || gpu[o + 4] !== 0) { gpu[o] = hx; gpu[o + 1] = hy; vel[iv] = vel[iv + 1] = 0; gpu[o + 4] = 0; }
+          continue;
+        }
+
+        const px = gpu[o]!, py = gpu[o + 1]!;
+        let vx = vel[iv]!, vy = vel[iv + 1]!;
+        const m = mass[i]!;
+        let slack = 1, fx = 0, fy = 0;
+        const dx = px - cx, dy = py - cy, d2 = dx * dx + dy * dy;
+        if (field > 0.002 && d2 < r2 * 6) {
+          const d = Math.sqrt(d2) + 0.5, nx = dx / d, ny = dy / d;
+          const f = Math.exp(-d2 / r2) * field * Math.min(1, rel * 3);
+          // Radial push + perpendicular swirl, both strongest at the cursor; a phase-shifted wobble keeps the scatter organic.
+          const wobble = Math.sin(hx * 0.071 + time * 3.1 + m * 9) * Math.cos(hy * 0.083 - time * 2.3 + m * 5);
+          fx = (nx * RADIAL - ny * SWIRL) * f + wobble * TURBULENCE * f;
+          fy = (ny * RADIAL + nx * SWIRL) * f - wobble * TURBULENCE * f;
+          slack = 1 - LOOSEN * f;
+        }
+        const k = SPRING * m * slack;
+        vx += (fx + (hx - px) * k - vx * DAMPING) * dt;
+        vy += (fy + (hy - py) * k - vy * DAMPING) * dt;
+        const qx = px + vx * dt, qy = py + vy * dt;
+        vel[iv] = vx; vel[iv + 1] = vy; gpu[o] = qx; gpu[o + 1] = qy;
+
+        // Back on its glyph and nearly still: fade the release out (type and particle cross-fade, so no pop).
+        const ox = qx - hx, oy = qy - hy;
+        if (ox * ox + oy * oy < 0.5 && vx * vx + vy * vy < 25) rel -= dt * 5;
+        gpu[o + 4] = rel;
+        active++;
+      }
+      return active;
     };
 
     const frame = (now: number) => {
       raf = 0;
-      const frames = last ? Math.min(now - last, 50) / (1000 / 60) : 1;
+      const dt = last ? Math.min(now - last, 33) / 1000 : 1 / 60;
+      const frames = dt * 60;
       last = now;
-      hover += ((inside ? 1 : 0) - hover) * ease(inside ? 0.16 : 0.1, frames);
+      field += ((inside ? 1 : 0) - field) * ease(inside ? 0.14 : 0.1, frames);
+      if (!inside && field < 0.003) field = 0;
       const follow = ease(0.25, frames);
       centre.x += (pointer.x - centre.x) * follow;
       centre.y += (pointer.y - centre.y) * follow;
-      if (!inside && hover < 0.002) { hover = 0; last = 0; render(); return; }
-      render();
+      released = ready() ? simulate(dt, now / 1000) : 0;
+      // The 2D type shows alone whenever nothing is loose; otherwise WebGL draws type + erase + particles.
+      solid.style.opacity = released ? "0" : "1";
+      draw(released > 0);
+      if (!inside && field === 0 && released === 0) { last = 0; return; }
       raf = requestAnimationFrame(frame);
     };
     const run = () => { if (!raf) raf = requestAnimationFrame(frame); };
@@ -281,8 +347,8 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       const bounds = glCanvas.getBoundingClientRect();
       const x = event.clientX - bounds.left, y = event.clientY - bounds.top;
       const over = x > box.x - HOVER_PAD && x < box.x + box.w + HOVER_PAD && y > box.y - HOVER_PAD && y < box.y + box.h + HOVER_PAD;
-      // Start the void exactly at the pointer when the effect is idle, so it never sweeps in from elsewhere.
-      if (over && !inside && hover < 0.01) { centre.x = x; centre.y = y; }
+      // Start the field exactly at the pointer when the effect is idle, so it never sweeps in from elsewhere.
+      if (over && !inside && field < 0.01) { centre.x = x; centre.y = y; }
       if (over) { pointer.x = x; pointer.y = y; }
       inside = over;
       run();
@@ -292,7 +358,8 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
 
     const start = () => {
       loaded = build();
-      render();
+      solid.style.opacity = "1";
+      draw(false);
     };
     if (src) {
       image = new Image();
@@ -303,10 +370,10 @@ export function ParticleText({ text, src }: { text: string; src?: string }) {
       document.fonts.ready.then(start);
     }
 
-    const resizeObserver = new ResizeObserver(() => { if (loaded) { loaded = build(); render(); } });
+    const resizeObserver = new ResizeObserver(() => { if (loaded) { loaded = build(); solid.style.opacity = "1"; draw(false); } });
     resizeObserver.observe(solid);
     // Theme changes recolour the type and particles in place (read from --particle at draw time).
-    const themeObserver = new MutationObserver(() => { if (loaded) { paintSolid(); render(); } });
+    const themeObserver = new MutationObserver(() => { if (loaded) { paintSolid(); if (released) draw(true); } });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     glCanvas.addEventListener("pointermove", onMove);
