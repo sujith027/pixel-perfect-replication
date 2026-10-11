@@ -10,19 +10,19 @@ import { useEffect, useRef, useState } from "react";
 // rather than gaining dots on top. Everything else is the untouched type texture. When all particles are home
 // the 2D type shows again and the loop sleeps.
 
-const LATTICE = 0.9; // css px between sampled particles (jittered inside its cell so no grid shows)
-const POINT = 1; // particle size in css px
-const ERASE = 1.7; // css px of type removed around a released particle's home (slightly larger than POINT)
+const LATTICE = 1.1; // css px between sampled particles (jittered inside its cell so no grid shows)
+const POINT = 2; // particle size in css px
+const ERASE = 2.4; // css px of type removed around a released particle's home (slightly larger than POINT)
 const HOVER_PAD = 10; // css px around the text box that still counts as hovering
 
-const RADIUS = 80; // force-field radius, css px
+const RADIUS = 72; // force-field radius, css px
 const RELEASE_INNER = 0.4, RELEASE_OUTER = 1.5; // release ramps from none at OUTER×radius to full at INNER×radius
-const RADIAL = 1150; // outward acceleration at the cursor, px/s²
-const SWIRL = 420; // tangential acceleration at the cursor, px/s²
-const TURBULENCE = 140; // random-looking wobble inside the field, px/s²
-const SPRING = 38; // pull back to home, 1/s²
-const LOOSEN = 0.6; // how much the field slackens the spring
-const DAMPING = 8; // velocity drag, 1/s
+const RADIAL = 2300; // outward acceleration at the cursor, px/s²
+const SWIRL = 2100; // tangential acceleration at the cursor, px/s²
+const TURBULENCE = 520; // random-looking wobble inside the field, px/s²
+const SPRING = 34; // pull back to home, 1/s²
+const LOOSEN = 0.9; // how much the field slackens the spring
+const DAMPING = 5.5; // velocity drag, 1/s
 const STRIDE = 5; // floats per particle in the GPU buffer: x, y, homeX, homeY, release
 
 const PARTICLE_VERTEX = `
