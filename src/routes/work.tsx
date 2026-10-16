@@ -14,8 +14,8 @@ export const Route = createFileRoute("/work")({
 
 function WorkPage() {
   return (
-    <main className="min-h-screen overflow-x-hidden">
-      <header className="border-b bg-background/90">
+    <main className="min-h-screen overflow-x-clip">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary">
             <ArrowLeft aria-hidden className="h-4 w-4" />
@@ -29,8 +29,8 @@ function WorkPage() {
 
       <section className="mx-auto max-w-6xl px-6 pb-12 pt-16 md:pt-20">
         <p className="font-semibold text-primary">Selected work</p>
-        <h1 className="mt-2 max-w-3xl font-display text-4xl font-extrabold md:text-6xl">More projects and Behance work</h1>
-        <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
+        <h1 className="mt-2 font-display text-4xl font-extrabold md:text-6xl">More projects and Behance work</h1>
+        <p className="mt-5 text-lg text-muted-foreground">
           A closer look at more product concepts, alongside the projects published on Behance.
         </p>
       </section>
@@ -98,15 +98,15 @@ function WorkPage() {
               <div className="p-5">
                 <h3 className="font-display text-xl font-bold">{project.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{project.sub}</p>
+                <div className="mt-4 flex flex-wrap gap-2">{project.tags.map((t) => <span key={t} className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{t}</span>)}</div>
               </div>
             </a>
           ))}
         </div>
       </section>
 
-      <footer className="mx-auto flex max-w-6xl justify-between border-t px-6 py-8 text-sm text-muted-foreground">
-        <Link to="/" className="font-semibold transition-colors hover:text-foreground">Sujith S Poojary</Link>
-        <span>© 2026</span>
+      <footer className="mx-auto max-w-6xl border-t px-6 py-8">
+        <p className="text-center text-sm text-muted-foreground">No pixels were harmed. Many were moved. © 2026 - Sujith S Poojary</p>
       </footer>
     </main>
   );
